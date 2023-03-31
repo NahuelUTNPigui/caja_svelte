@@ -3,3 +3,11 @@ Ver como resolverlo
 
 BD | ->(200)-> |APP|  ->(5,10,15)-> |Pantalla|
 --              ---                  --------
+
+
+Resolver la paginacion de egresos que no funciona en la compU
+Poner el monto en los reportes
+Poner mas de 200 clientes y proveedores
+Lo de los decimales alineados
+En los reportes los decimales se toman como csv
+En el orden alfabetico no importe si es mayuscula o minuscula

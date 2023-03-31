@@ -5,10 +5,13 @@
     let fechaDesde=""
     let fechaHasta=""
     let codUnidad=""
+    let codRubro=""
+    let clientes_todos=[]
     let codModo=""
     let codCliente=""
     let montoDesde=0
     let montoHasta=0
+    let monto_total=0
     let total=0
     let ordenar_por=""
     let ingresos_todos=[]
@@ -34,6 +37,13 @@
         else{
             return 0
         }       
+    }
+    function getClienteCod(codCliente){
+        let cs=clientes_todos.filter(p=>p.id===codCliente)
+        if(cs.length==0){
+            return null
+        }
+        return cs[0]
     }
     function filt(ig){
             if(fechaDesde!==""){
@@ -69,85 +79,64 @@
             if(ig.monto<montoDesde){
                 return false
             }
+            if(codRubro!==""){
+                let c = getClienteCod(ig.codCliente)
+                if(c.codRubro!==codRubro){
+                    return false
+                }
+            }
             return true
     }
     async function getIngresosPagina(pagina){
         if (pagina==0){
             ingresos_todos=[]
+            monto_total=0
             return []
         }
         if (pagina==1){
+            monto_total=0
             ingresos_todos=[]
             let res=await fetch(RUTA+"/ingreso/records?perPage=1&&page=1")
             let data=await res.json()
-            if(data.totalItems>200){
-                let paginas=Math.floor(data.totalItems/200)+1
-                for(let i=1;i<=paginas;i++){
-                    let res_ing=await fetch(RUTA+"/ingreso/records?perPage=200&page="+i)
-                    let data_ing=await res_ing.json()
-                    ingresos_todos=ingresos_todos.concat(data_ing.items.filter(filt))
-                }
-                if (ingresos_todos.length===0){
-                    pagina_actual=0
-                }
-                else{
-                    pagina_actual=pagina
-                }
-                //Que onda que no funciona
-                let ordenar=sortByFecha
-                if(ordenar_por=="monto"){
-                    // @ts-ignore
-                    ordenar=sortByMonto
-                }
-                ingresos_todos.sort(ordenar)
-                paginas_totales=ingresos_todos.length/itemxpagina|0
-                if(ingresos_todos.length%itemxpagina !== 0){
-                    paginas_totales += 1
-                }
-                pages_promise=[]
-                for(let i=1;i<=paginas_totales;i++){
-                    pages_promise.push(i)
-                }
-                let ingreso_pagina=[]
-                for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>ingresos_todos.length?ingresos_todos.length:pagina*itemxpagina);i++){
-                    ingreso_pagina.push(ingresos_todos[i])
-                }
-                
-                return ingreso_pagina
+            
+            let paginas=Math.floor(data.totalItems/200)+1
+            for(let i=1;i<=paginas;i++){
+                let res_ing=await fetch(RUTA+"/ingreso/records?perPage=200&page="+i)
+                let data_ing=await res_ing.json()
+                ingresos_todos=ingresos_todos.concat(data_ing.items.filter(filt))
+            }
+            if (ingresos_todos.length===0){
+                pagina_actual=0
             }
             else{
-                let res_ing=await fetch(RUTA+"/ingreso/records?perPage=200&&page=1")
-                let data_ing=await res_ing.json()
-                ingresos_todos=data_ing.items.filter(ig=>filt(ig))
-                if (ingresos_todos.length===0){
-                    pagina_actual=0
-                }
-                else{
-                    pagina_actual=pagina
-                }
-                //Que onda que no funciona
-                let ordenar=sortByFecha
-                if(ordenar_por=="monto"){
-                    // @ts-ignore
-                    ordenar=sortByMonto
-                }
-                ingresos_todos.sort(ordenar)
-                paginas_totales=ingresos_todos.length/itemxpagina|0
-                if(ingresos_todos.length%itemxpagina !== 0){
-                    paginas_totales += 1
-                }
-                pages_promise=[]
-                for(let i=1;i<=paginas_totales;i++){
-                    pages_promise.push(i)
-                }
-                let ingreso_pagina=[]
-                for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>ingresos_todos.length?ingresos_todos.length:pagina*itemxpagina);i++){
-                    ingreso_pagina.push(ingresos_todos[i])
-                }
-                
-                return ingreso_pagina
-
+                pagina_actual=pagina
             }
+            //Que onda que no funciona
+            let ordenar=sortByFecha
+            if(ordenar_por=="monto"){
+                // @ts-ignore
+                ordenar=sortByMonto
+            }
+            ingresos_todos.sort(ordenar)
+            paginas_totales=ingresos_todos.length/itemxpagina|0
+            if(ingresos_todos.length%itemxpagina !== 0){
+                paginas_totales += 1
+            }
+            pages_promise=[]
+            for(let i=1;i<=paginas_totales;i++){
+                pages_promise.push(i)
+            }
+            for(let i_i=0;i_i<ingresos_todos.length;i_i++){
+                monto_total += ingresos_todos[i_i].monto
+            }
+            let ingreso_pagina=[]
+            for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>ingresos_todos.length?ingresos_todos.length:pagina*itemxpagina);i++){
+                ingreso_pagina.push(ingresos_todos[i])
+            }
+            
+            return ingreso_pagina
+            
+            
         }
         else{
             pagina_actual=pagina
@@ -160,35 +149,7 @@
         }
         
     }
-    async function getIngresosFiltros(){
-        
-        let res=await fetch(RUTA+"/ingreso/records?perPage=200&&page=1")
-        let data=await res.json()
-        
-        let items=data.items.filter(
-            ig=>filt(ig)
-        )
-        if(ordenar_por!==""){
-            if(ordenar_por==="fecha"){
-                items.sort((i1,i2)=>{
-                    if(i1.fechaIngreso>i2.fechaIngreso){
-                        return -1
-                    }
-                    else{
-                        return 1
-                    }
-                })
-            }
-            else{
-                items.sort((i1,i2)=>{
-                    return i2.monto-i1.monto
-                })
-            }
-        }
-        total=items.reduce((prev,i)=>prev+i.monto,0)
-        ingresos_promise=items
-        
-    }
+    
     async function getClienteNombre(codClient){
         let res=await fetch(RUTA+"/cliente/records/"+codClient)
         let data=await res.json()
@@ -205,19 +166,48 @@
         return data.nombre
     }
     async function getUnidades(){
+        let unidades=[]
         let res=await fetch(RUTA+"/unidades/records?perPage=100&&page1")
         let data=await res.json()
-        return data.items
+        unidades=data.items
+        unidades.sort((u1,u2)=>u1.nombre.toLowerCase()<u2.nombre.toLowerCase()?-1:1)
+        return unidades
     }
     async function getModos(){
+        let modos=[]
         let res=await fetch(RUTA+"/modopago/records?perPage=100&&page1")
         let data=await res.json()
-        return data.items
+        modos=data.items
+        modos.sort((m1,m2)=>m1.nombre.toLowerCase()<m2.nombre.toLowerCase()?-1:1)
+
+        return modos
+    }
+    async function getRubros(){
+        let rubros=[]
+        let res_p=await fetch(RUTA+"/rubro/records?page=1&perPage=1")
+        let data_p=await res_p.json()
+        let paginas= Math.floor(data_p.totalItems/200)+1
+        for(let pag=1;pag<=paginas;pag++){
+            let res=await fetch(RUTA+"/rubro/records?perPage=200&page="+pag)
+            let data=await res.json()
+            rubros=rubros.concat(data.items)
+        }
+        rubros.sort((r1,r2)=>r1.nombre.toLowerCase()<r2.nombre.toLowerCase()?-1:1)
+        return rubros
     }
     async function getClientes(){
-        let res=await fetch(RUTA+"/cliente/records?sort=nombre&&perPage=200&&page1")
-        let data=await res.json()
-        return data.items
+        let clientes=[]
+        let res_p=await fetch(RUTA+"/cliente/records?page=1&perPage=1")
+        let data_p=await res_p.json()
+        let paginas= Math.floor(data_p.totalItems/200)+1
+        for(let pag=1;pag<=paginas;pag++){
+            let res =await fetch(RUTA+"/cliente/records?perPage=200&page="+pag)
+            let data=await res.json()
+            clientes=clientes.concat(data.items)
+        }
+        clientes.sort((c1,c2)=>c1.nombre.toLowerCase()<c2.nombre.toLowerCase()?-1:1)
+        clientes_todos=clientes
+        return clientes
     }
     function num2Curr(number){
         const numberFormat = new Intl.NumberFormat('es-ES');
@@ -266,6 +256,19 @@
                 {#await getClientes() then cs}
                     {#each cs as c}
                         <option value="{c.id}">{c.nombre}</option>
+                    {/each}
+                    
+                {/await}
+            </select>
+        </Col>
+        <Col>
+            Rubro
+            <br>    
+            <select bind:value="{codRubro}" name="rubro" id="rubro" size="1">
+                <option value=""></option>
+                {#await getRubros() then rs}
+                    {#each rs as r}
+                        <option value="{r.id}">{r.nombre}</option>
                     {/each}
                     
                 {/await}
@@ -344,11 +347,11 @@
         </Col>
         <Col>
             <br>
-            <h4>Ingreso Total : ${num2Curr(total)}</h4>
+            <h4>Ingreso Total : ${num2Curr(monto_total)}</h4>
         </Col>
         <Col>
             {#await ingresos_promise then ingreso}
-                <Exporttable table={ingresos_todos} headers={["monto","fecha","agente","modo","unidad","tipo"]}></Exporttable>
+                <Exporttable table={ingresos_todos} headers={["fecha","monto","agente","modo","unidad","tipo"]}></Exporttable>
             {/await}
             <!--Ya se me va a ocurrir algo-->
             <!--<Exporttable table={async ()=>await ingresos_promise} headers={["monto","fecha","agente","modo","unidad","tipo"]}></Exporttable>-->

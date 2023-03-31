@@ -24,26 +24,31 @@
         noFecha:false,
         noUnidad:false
     }
-    /*
-    if(codEgreso!=="0"){
-        getEgreso(codEgreso)
-    }
-    */
+
     let modos_promise=getModos()
     let proveedores_promise=getProveedores()
     let unidades_promise=getUnidades()
     async function getModos(){
-        let res=await fetch(RUTA+"/modopago/records?perPage=100&&page1")
+        let res=await fetch(RUTA+"/modopago/records?perPage=100&&page=1")
         let data=await res.json()
         return data.items
     }
     async function getProveedores() {
-        let res=await fetch(RUTA+"/proveedores/records?sort=apodo&&perPage=200&&page1")
-        let data=await res.json()
-        return data.items
+        let proveedores=[]
+        let res_p=await fetch(RUTA+"/proveedores/records?page=1&perPage=1")
+        let data_p=await res_p.json()
+        let paginas= Math.floor(data_p.totalItems/200)+1
+        for(let pag=1;pag<=paginas;pag++){
+            let res = await fetch(RUTA+"/proveedores/records?perPage=200&page="+pag)
+            let data=await res.json()
+            proveedores=proveedores.concat(data.items)
+        }
+        proveedores.sort((c1,c2)=>c1.nombre.toLowerCase()<c2.nombre.toLowerCase()?-1:1)
+        
+        return proveedores
     }
     async function getUnidades() {
-        let res=await fetch(RUTA+"/unidades/records?perPage=100&&page1")
+        let res=await fetch(RUTA+"/unidades/records?perPage=100&&page=1")
         let data=await res.json()
         return data.items
     }
@@ -57,11 +62,6 @@
         codModo=data.codModo
         codUnidad=data.codUnidad 
         last_monto=data.monto   
-    }
-    async function getSaldo(){
-        let res=await fetch(RUTA+"/saldo/records")
-        let data=await res.json()
-        return data.items[0]
     }
     function checkForm(){
         let res=true
@@ -99,7 +99,6 @@
                 observacion
             }
             if(codEgreso==="0"){
-                let saldo=await getSaldo()
                 await fetch(RUTA+"/egreso/records",{
                     method:"POST",
                     headers:{
@@ -107,18 +106,8 @@
                     },
                     body:JSON.stringify(e)
                 })
-                await fetch(RUTA+"/saldo/records/"+saldo.id,{
-                    method:"PATCH",
-                    headers:{
-                        "Content-Type":"application/json"
-                    },
-                    body:JSON.stringify({
-                        monto:saldo.monto-e.monto
-                    })
-                })
             }
             else{
-                let saldo=await getSaldo()
                 await fetch(RUTA+"/egreso/records/"+codEgreso,{
                     method:"PATCH",
                     headers:{
@@ -126,15 +115,6 @@
                     },
                     body:JSON.stringify(e)
                 })
-                /* await fetch(RUTA+"/saldo/records/"+saldo.id,{
-                    method:"PATCH",
-                    headers:{
-                        "Content-Type":"application/json"
-                    },
-                    body:JSON.stringify({
-                        monto:saldo.monto+last_monto-e.monto
-                    })
-                }) */
             }
             navigate("/egresos")    
         }

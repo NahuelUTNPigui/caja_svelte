@@ -31,106 +31,20 @@
             ingresos_todos=[]
             let res=await fetch(RUTA+"/ingreso/records?perPage=1&page1")
             let data_ing_q=await res.json()
-            if(data_ing_q.totalItems>200){
-                let paginas=Math.floor(data_ing_q.totalItems/200)+1
-                for(let i=1;i<=paginas;i++){
-                    let res_ing=await fetch(RUTA+"/ingreso/records?perPage=200&page="+i)
-                    let data_ing=await res_ing.json()
-                    ingresos_todos=ingresos_todos.concat(data_ing.items.filter(ig=>(fechaDesde==="" || ig.fechaIngreso>=fechaDesde) && (fechaHasta==="" || ig.fechaIngreso<=fechaHasta)))
-                }
-                if (ingresos_todos.length===0){
-                    pagina_actual=0
-                }
-                else{
-                    pagina_actual=pagina
-                }
-                ingresos_todos.sort((a,b)=>{
-                    if(new Date(a.fechaIngreso)>new Date(b.fechaIngreso)){
-                        return -1
-                    }
-                    else if(new Date(a.fechaIngreso)<new Date(b.fechaIngreso)){
-                        return 1
-                    }
-                    else{
-                        return 0
-                    }
-                })
-                paginas_totales=ingresos_todos.length/itemxpagina|0
-                if(ingresos_todos.length%itemxpagina !== 0){
-                    paginas_totales += 1
-                }
-                pages_promise=[]
-                for(let i=1;i<=paginas_totales;i++){
-                    pages_promise.push(i)
-                }
-                ingreso_pagina=[]
-                for(let i=0;i<(itemxpagina>ingresos_todos.length?ingresos_todos.length:itemxpagina);i++){
-                    ingreso_pagina.push(ingresos_todos[i])
-                }
-                
-                return ingreso_pagina
-                             
+            
+            let paginas=Math.floor(data_ing_q.totalItems/200)+1
+            for(let i=1;i<=paginas;i++){
+                let res_ing=await fetch(RUTA+"/ingreso/records?perPage=200&page="+i)
+                let data_ing=await res_ing.json()
+                ingresos_todos=ingresos_todos.concat(data_ing.items.filter(ig=>(fechaDesde==="" || ig.fechaIngreso>=fechaDesde) && (fechaHasta==="" || ig.fechaIngreso<=fechaHasta)))
             }
-            else{
-                let res_ing=await fetch(RUTA+"/ingreso/records?perPage=200&page=1")
-                let data=await res_ing.json()                
-                ingresos_todos=data.items.filter(ig=>(fechaDesde==="" || ig.fechaIngreso>=fechaDesde) && (fechaHasta==="" || ig.fechaIngreso<=fechaHasta))
-                if (ingresos_todos.length===0){
-                    pagina_actual=0
-                }
-                else{
-                    pagina_actual=pagina
-                }
-                ingresos_todos.sort((a,b)=>{
-                    if(new Date(a.fechaIngreso)>new Date(b.fechaIngreso)){
-                        return -1
-                    }
-                    else if(new Date(a.fechaIngreso)<new Date(b.fechaIngreso)){
-                        return 1
-                    }
-                    else{
-                        return 0
-                    }
-                })
-                paginas_totales=ingresos_todos.length/itemxpagina|0
-                if(ingresos_todos.length%itemxpagina !== 0){
-                    paginas_totales += 1
-                }
-                pages_promise=[]
-                for(let i=1;i<=paginas_totales;i++){
-                    pages_promise.push(i)
-                }
-                ingreso_pagina=[]
-                for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>ingresos_todos.length?ingresos_todos.length:pagina*itemxpagina);i++){
-                    ingreso_pagina.push(ingresos_todos[i])
-                }
-                
-                return ingreso_pagina
-            }
-        }
-        else{
-            pagina_actual=pagina
-            ingreso_pagina=[]
-            for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>ingresos_todos.length?ingresos_todos.length:pagina*itemxpagina);i++){
-                    ingreso_pagina.push(ingresos_todos[i])
-            }
-                
-            return ingreso_pagina
-        }
-        /*
-            let res=await fetch(RUTA+"/ingreso/records?perPage=0&page1")
-            let data_ing_q=await res.json()
-            //let res_ing=await fetch(RUTA+"/ingreso/records?perPage="+data_ing_q.totalItems+"&page=1")
-            let res_ing=await fetch(RUTA+"/ingreso/records?perPage="+800+"&page=1")
-            let data=await res_ing.json()
-            let items=data.items.filter(ig=>(fechaDesde==="" || ig.fechaIngreso>=fechaDesde) && (fechaHasta==="" || ig.fechaIngreso<=fechaHasta))
-            if (items.length===0){
+            if (ingresos_todos.length===0){
                 pagina_actual=0
             }
             else{
                 pagina_actual=pagina
             }
-            items.sort((a,b)=>{
+            ingresos_todos.sort((a,b)=>{
                 if(new Date(a.fechaIngreso)>new Date(b.fechaIngreso)){
                     return -1
                 }
@@ -141,24 +55,33 @@
                     return 0
                 }
             })
-
-            ingresos_filtrados=items
-            
-            paginas_totales=items.length/itemxpagina|0
-            if(items.length%itemxpagina !== 0){
+            paginas_totales=ingresos_todos.length/itemxpagina|0
+            if(ingresos_todos.length%itemxpagina !== 0){
                 paginas_totales += 1
             }
             pages_promise=[]
             for(let i=1;i<=paginas_totales;i++){
                 pages_promise.push(i)
             }
-            ingreso_pagina=[]
-            for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>items.length?items.length:pagina*itemxpagina);i++){
-                ingreso_pagina.push(ingresos_filtrados[i])
+            let ingreso_pagina=[]
+            for(let i=0;i<(itemxpagina>ingresos_todos.length?ingresos_todos.length:itemxpagina);i++){
+                ingreso_pagina.push(ingresos_todos[i])
             }
             
             return ingreso_pagina
-        */
+                             
+            
+            
+        }
+        else{
+            pagina_actual=pagina
+            let ingreso_pagina=[]
+            for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>ingresos_todos.length?ingresos_todos.length:pagina*itemxpagina);i++){
+                    ingreso_pagina.push(ingresos_todos[i])
+            }
+                
+            return ingreso_pagina
+        }
 
     }
     async function eliminarIngresoBD(){

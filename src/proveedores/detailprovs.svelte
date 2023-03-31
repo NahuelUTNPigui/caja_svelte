@@ -1,6 +1,7 @@
 <script>
     import {onMount} from "svelte"
     import { navigate } from 'svelte-routing';
+    import { add_attribute } from "svelte/internal";
     import {Container,Row,Col,Form,Input,Label,Button} from 'sveltestrap'
     export let codProv="0"
     onMount(async ()=>{
@@ -20,11 +21,6 @@
         noApellido:false,
         noTipo:false
     }
-    /*
-    if(codProv!=="0"){
-        getProveedor(codProv)
-    }
-    */
     async function getProveedor(idProv){
         let res=await fetch(RUTA+"/proveedores/records/"+idProv)
         let data=await res.json()
@@ -89,9 +85,16 @@
     }
     let tipos_promise=getTipos()
     async function getTipos(){
-        let res=await fetch(RUTA+"/tipoproveedor/records")
-        let data=await res.json()
-        return data.items
+        let tipoproveedores=[]
+        let res_p=await fetch(RUTA+"/tipoproveedor/records?page=1&perPage=1")
+        let data_p = await res_p.json()
+        let paginas= Math.floor(data_p.totalItems/200)+1
+        for(let pag=1;pag<=paginas;pag++){
+            let res=await fetch(RUTA+"/tipoproveedor/records?perPage=200&page="+pag)
+            let data=await res.json()
+            tipoproveedores=tipoproveedores.concat(data.items)
+        }
+        return tipoproveedores
     }
 </script>
 <main>

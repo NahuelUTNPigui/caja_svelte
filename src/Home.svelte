@@ -1,6 +1,6 @@
 <script>
     import {Container,Row,Col,Table} from 'sveltestrap'
-    const version="1.0.3"
+    const version="1.0.4"
     const RUTA="http://localhost:8090/api/collections"
     let nuevoSaldo=false
     let numNuevoSaldo=0
@@ -38,38 +38,23 @@
         let res_egreso_q=await fetch(RUTA+"/egreso/records?perPage=1&page=1")
         let data_ing_q=await res_ingreso_q.json()
         let data_eg_q=await res_egreso_q.json()
-        if(data_ing_q.totalItems>200){
-            let paginas=Math.floor(data_ing_q.totalItems/200)+1
-            for(let i=1;i<=paginas;i++){
-                let res_ing=await fetch(RUTA+"/ingreso/records?perPage=200&page="+i)
-                let data_ing=await res_ing.json()
-                ingresos=ingresos.concat(data_ing.items)
-            }
-        }
-        else{
-            let res_ing=await fetch(RUTA+"/ingreso/records?perPage="+data_ing_q.totalItems+"&page=1")
+        
+        let paginas=Math.floor(data_ing_q.totalItems/200)+1
+        for(let i=1;i<=paginas;i++){
+            let res_ing=await fetch(RUTA+"/ingreso/records?perPage=200&page="+i)
             let data_ing=await res_ing.json()
-            ingresos=data_ing.items
+            ingresos=ingresos.concat(data_ing.items)
         }
-        if(data_eg_q.totalItems>200){
-            let paginas=Math.floor(data_eg_q.totalItems/200)+1
-            for(let i=1;i<=paginas;i++){
-                let res_eg=await fetch(RUTA+"/egreso/records?perPage=200&page="+i)
-                let data_eg=await res_eg.json()
-                
-                egresos=egresos.concat(data_eg.items)
-            }
-        }
-        else{
-            let res_eg=await fetch(RUTA+"/egreso/records?perPage="+data_ing_q.totalItems+"&page=1")
+        
+        
+        
+        paginas=Math.floor(data_eg_q.totalItems/200)+1
+        for(let i=1;i<=paginas;i++){
+            let res_eg=await fetch(RUTA+"/egreso/records?perPage=200&page="+i)
             let data_eg=await res_eg.json()
-            egresos=data_eg.items
-        }
-        
-
-        
-        
-        
+            
+            egresos=egresos.concat(data_eg.items)
+        }        
         let saldo=0
         for(let i=0;i<ingresos.length;i++){
             saldo += ingresos[i].monto

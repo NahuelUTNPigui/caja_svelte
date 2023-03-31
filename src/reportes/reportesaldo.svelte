@@ -94,9 +94,11 @@
     }
     async function getSaldoPagina(pagina){
         if (pagina==0){
+            total=0
             return []
         }
         if(pagina==1){
+            total=0
             saldos_todos=[]
             let res_ing=await fetch(RUTA+"/ingreso/records?perPage=1&&page=1")
             let res_eg=await fetch(RUTA+"/egreso/records?perPage=1&page=1")
@@ -127,6 +129,15 @@
                 ordenar=sortByMonto
             }
             saldos_todos.sort(ordenar)
+            for(let s_i=0;s_i<saldos_todos.length;s_i++){
+                if(saldos_todos[s_i].fechaEgreso){
+                    total -= saldos_todos[s_i].monto
+                }
+                else{
+                    total += saldos_todos[s_i].monto
+                }
+                
+            }
             paginas_totales=saldos_todos.length/itemxpagina|0
             if(saldos_todos.length%itemxpagina !== 0){
                 paginas_totales += 1
@@ -155,113 +166,7 @@
         }
 
     }
-    async function getSaldoFilter(){
-        function filt(sal,is_ing){
-            if(fechaDesde!==""){
-                if(is_ing){
-                    if(!(sal.fechaIngreso>=fechaDesde)){
-                        return false
-                    }
-                }
-                else{
-                    if(!(sal.fechaEgreso>=fechaDesde)){
-                        return false
-                    }
-
-                }
-
-            }
-            if(fechaHasta!==""){
-                if(is_ing){
-                    if(!(sal.fechaIngreso<=fechaHasta)){
-                        return false
-                    }
-                }
-                else{
-                    if(!(sal.fechaEgreso<=fechaHasta)){
-                        return false
-                    }
-                }
-
-            }
-            if(codModo!==""){
-                if(sal.codModo!==codModo){
-                    return false
-                }
-            }
-            if(codUnidad!==""){
-                if(sal.codUnidad!==codUnidad){
-                    return false
-                }
-            }
-            if(montoHasta!==0){
-                if(sal.monto>montoHasta){
-                    return false
-                }
-            }
-            if(sal.monto<montoDesde){
-                return false
-            }
-            return true
-        }
-        let res_ingreso_q=await fetch(RUTA+"/ingreso/records?perPage=0&&page=1")
-        let res_egreso_q=await fetch(RUTA+"/egreso/records?perPage=0&&page=1")
-        let data_ing_q=await res_ingreso_q.json()
-        let data_eg_q=await res_egreso_q.json()
-        let res_ing=await fetch(RUTA+"/ingreso/records?perPage="+data_ing_q.totalItems+"&&page=1")
-        let res_eg=await fetch(RUTA+"/egreso/records?perPage="+data_eg_q.totalItems+"&&page=1")
-        let data_ing=await res_ing.json()
-        let data_eg=await res_eg.json()
-        
-        
-        let items_ing=data_ing.items.filter(
-            ig=>filt(ig,true)
-        )
-        let items_eg=data_eg.items.filter(
-            eg=>filt(eg,false)
-        )
-        let items=items_ing.concat(items_eg)
-        if(ordenar_por!==""){
-            if(ordenar_por==="fecha"){
-                items.sort((s1,s2)=>{
-                    if(s1.fechaIngreso){
-                        if(s1.fechaIngreso>s2.fechaIngreso){
-                            return -1
-                        }
-                        else{
-                            return 1
-                        }
-                    }
-                    else{
-                        if(s1.fechaEgreso>s2.fechaEgreso){
-                            return -1
-                        }
-                        else{
-                            return 1
-                        }
-                    }
-
-
-                })
-            }
-            else{
-                items.sort((i1,i2)=>{
-                    return i2.monto-i1.monto
-                })
-            }
-        }
-        total=0
-        for(let s of items){
-            if(s.codCliente){
-                total+=s.monto
-            }
-            else{
-                total-=s.monto
-            }
-        }
-        saldo_promise=items
-        
-    }
+    
     async function getClienteNombre(codClient){
         let res=await fetch(RUTA+"/cliente/records/"+codClient)
         let data=await res.json()
@@ -283,14 +188,20 @@
         return data.nombre
     }
     async function getUnidades(){
+        let unidades=[]
         let res=await fetch(RUTA+"/unidades/records")
         let data=await res.json()
-        return data.items
+        unidades=data.items
+        unidades.sort((u1,u2)=>u1.nombre.toLowerCase()<u2.nombre.toLowerCase()?-1:1)
+        return unidades
     }
     async function getModos(){
+        let modos=[]
         let res=await fetch(RUTA+"/modopago/records")
         let data=await res.json()
-        return data.items
+        modos=data.items
+        modos.sort((m1,m2)=>m1.nombre.toLowerCase()<m2.nombre.toLowerCase()?-1:1)
+        return modos
     }
     function num2Curr(number){
         const numberFormat = new Intl.NumberFormat('es-ES');
@@ -408,7 +319,7 @@
         <Col>
 
             {#await saldo_promise then ss}
-                <Exporttable table={saldos_todos} headers={["monto","fecha","agente","modo","unidad","tipo"]} ></Exporttable>    
+                <Exporttable table={saldos_todos} headers={["fecha","monto","agente","modo","unidad","tipo"]} ></Exporttable>    
             {/await}
             
         </Col>

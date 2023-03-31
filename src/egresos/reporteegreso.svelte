@@ -5,10 +5,13 @@
     let fechaDesde=""
     let fechaHasta=""
     let codUnidad=""
+    let proveedores_todos=[]
+    let codTipoProveedor=""
     let codModo=""
     let codProv=""
     let montoDesde=0
     let montoHasta=0
+    let monto_total=0
     let total=0
     let ordenar_por=""
     let itemxpagina=20
@@ -32,6 +35,13 @@
         else{
             return 0
         }       
+    }
+    function getProveedorCod(codProveedor){
+        let ps=proveedores_todos.filter(p=>p.id===codProveedor)
+        if(ps.length==0){
+            return null
+        }
+        return ps[0]
     }
     function filt(eg){
         if(fechaDesde!==""){
@@ -67,86 +77,66 @@
         if(eg.monto<montoDesde){
             return false
         }
+        if(codTipoProveedor!=""){
+            let p=getProveedorCod(eg.codProveedor)
+            if(p.codTipo!==codTipoProveedor){
+                return false
+            }
+        }
         return true
     }
     async function getEgresosPagina(pagina){
         if(pagina==0){
+            egresos_todos=[]
+            monto_total=0
             return []
         }
         if(pagina==1){
+            monto_total=0   
             egresos_todos=[]
             let res=await fetch(RUTA+"/egreso/records?perPage=1&page=1")
             let data=await res.json()
-            if(data.totalItems>200){
-                let paginas=Math.floor(data.totalItems/200)+1
-                for(let i=1;i<=paginas;i++){
-                    let res_eg=await fetch(RUTA+"/egreso/records?perPage=200&page="+i)
-                    let data_eg=await res_eg.json()
-                    
-                    egresos_todos=egresos_todos.concat(data_eg.items.filter(filt))
+            
+            let paginas=Math.floor(data.totalItems/200)+1
+            for(let i=1;i<=paginas;i++){
+                let res_eg=await fetch(RUTA+"/egreso/records?perPage=200&page="+i)
+                let data_eg=await res_eg.json()
                 
-                }
-                //Que onda que no funciona
-                let ordenar=sortByFecha
-                if(ordenar_por=="monto"){
-                    // @ts-ignore
-                    ordenar=sortByMonto
-                }
-                egresos_todos.sort(ordenar)
-                if (egresos_todos.length===0){
-                    pagina_actual=0
-                }
-                else{
-                    pagina_actual=pagina
-                }
-                paginas_totales=egresos_todos.length/itemxpagina|0
-                if(egresos_todos.length%itemxpagina !== 0){
-                    paginas_totales += 1
-                }
-                pages_promise=[]
-                for(let i=1;i<=paginas_totales;i++){
-                    pages_promise.push(i)
-                }
-                let egreso_pagina=[]
-                for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>egresos_todos.length?egresos_todos.length:pagina*itemxpagina);i++){
-                    egreso_pagina.push(egresos_todos[i])
-                }
-                
-                return egreso_pagina
+                egresos_todos=egresos_todos.concat(data_eg.items.filter(filt))
+            
+            }
+            //Que onda que no funciona
+            let ordenar=sortByFecha
+            if(ordenar_por=="monto"){
+                // @ts-ignore
+                ordenar=sortByMonto
+            }
+            egresos_todos.sort(ordenar)
+            for(let e_i=0;e_i<egresos_todos.length;e_i++){
+                monto_total += egresos_todos[e_i].monto
+            }
+            if (egresos_todos.length===0){
+                pagina_actual=0
             }
             else{
-                let res_eg=await fetch(RUTA+"/egreso/records?perPage="+data.totalItems+"&page=1")
-                let data_eg=await res_eg.json()
-
-                egresos_todos = data_eg.items.filter(filt)
-                if (egresos_todos.length===0){
-                    pagina_actual=0
-                }
-                else{
-                    pagina_actual=pagina
-                }
-                //Que onda que no funciona
-                let ordenar=sortByFecha
-                if(ordenar_por=="monto"){
-                    // @ts-ignore
-                    ordenar=sortByMonto
-                }
-                egresos_todos.sort(ordenar)
-                paginas_totales=egresos_todos.length/itemxpagina|0
-                if(egresos_todos.length%itemxpagina !== 0){
-                    paginas_totales += 1
-                }
-                pages_promise=[]
-                for(let i=1;i<=paginas_totales;i++){
-                    pages_promise.push(i)
-                }
-                let egreso_pagina=[]
-                for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>egresos_todos.length?egresos_todos.length:pagina*itemxpagina);i++){
-                    egreso_pagina.push(egresos_todos[i])
-                }
-                
-                return egreso_pagina
+                pagina_actual=pagina
             }
+            paginas_totales=egresos_todos.length/itemxpagina|0
+            if(egresos_todos.length%itemxpagina !== 0){
+                paginas_totales += 1
+            }
+            pages_promise=[]
+            for(let i=1;i<=paginas_totales;i++){
+                pages_promise.push(i)
+            }
+            let egreso_pagina=[]
+            for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>egresos_todos.length?egresos_todos.length:pagina*itemxpagina);i++){
+                egreso_pagina.push(egresos_todos[i])
+            }
+            
+            return egreso_pagina
+
+            
         }
         else{
             pagina_actual=pagina
@@ -158,70 +148,6 @@
 
             return egreso_pagina
         }
-    }
-    async function getEgresosFiltros(){
-        function filt(eg){
-            if(fechaDesde!==""){
-                if(!(eg.fechaEgreso>=fechaDesde)){
-                    return false
-                }
-            }
-            if(fechaHasta!==""){
-                if(!(eg.fechaEgreso<=fechaHasta)){
-                    return false
-                }
-            }
-            if(codProv!==""){
-                if(eg.codProveedor!==codProv){
-                    return false
-                }
-            }
-            if(codModo!==""){
-                if(eg.codModo!==codModo){
-                    return false
-                }
-            }
-            if(codUnidad!==""){
-                if(eg.codUnidad!==codUnidad){
-                    return false
-                }
-            }
-            if(montoHasta!==0){
-                if(eg.monto>montoHasta){
-                    return false
-                }
-            }
-            if(eg.monto<montoDesde){
-                return false
-            }
-            return true
-        }
-        let res=await fetch(RUTA+"/egreso/records?perPage=200&&page=1")
-        let data=await res.json()
-        let items=data.items.filter(
-            eg=>filt(eg)
-        )
-        
-        if(ordenar_por!==""){
-            if(ordenar_por==="fecha"){
-                items.sort((e1,e2)=>{
-                    if(e1.fechaEgreso>e2.fechaEgreso){
-                        return -1
-                    }
-                    else{
-                        return 1
-                    }
-                })
-            }
-            else{
-                items.sort((i1,i2)=>{
-                    return i2.monto-i1.monto
-                })
-            }
-        }
-        total=items.reduce((prev,e)=>prev+e.monto,0)
-        egresos_promise=items
-        
     }
     async function getProveedorNombre(idProv){
         let res=await fetch(RUTA+"/proveedores/records/"+idProv)
@@ -239,19 +165,47 @@
         return data.nombre
     }
     async function getUnidades(){
+        let unidades=[]
         let res=await fetch(RUTA+"/unidades/records?perPage=100&&page1")
         let data=await res.json()
-        return data.items
+        unidades=data.items
+        unidades.sort((u1,u2)=>u1.nombre.toLowerCase()<u2.nombre.toLowerCase()?-1:1)
+        return unidades
     }
     async function getModos(){
+        let modos=[]
         let res=await fetch(RUTA+"/modopago/records?perPage=100&&page1")
         let data=await res.json()
-        return data.items
+        modos=data.items
+        modos.sort((m1,m2)=>m1.nombre.toLowerCase()<m2.nombre.toLowerCase()?-1:1)
+        return modos
+    }
+    async function getTipoProveedores(){
+        let tipoproveedores=[]
+        let res_p=await fetch(RUTA+"/tipoproveedor/records?page=1&perPage=1")
+        let data_p = await res_p.json()
+        let paginas= Math.floor(data_p.totalItems/200)+1
+        for(let pag=1;pag<=paginas;pag++){
+            let res=await fetch(RUTA+"/tipoproveedor/records?perPage=200&page="+pag)
+            let data=await res.json()
+            tipoproveedores=tipoproveedores.concat(data.items)
+        }
+        tipoproveedores.sort((t1,t2)=>t1.nombre.toLowerCase()<t2.nombre.toLowerCase()?-1:1)
+        return tipoproveedores
     }
     async function getProveedores(){
-        let res=await fetch(RUTA+"/proveedores/records?sort=apodo&&perPage=200&&page1")
-        let data=await res.json()
-        return data.items
+        let proveedores=[]
+        let res_p=await fetch(RUTA+"/proveedores/records?page=1&perPage=1")
+        let data_p=await res_p.json()
+        let paginas= Math.floor(data_p.totalItems/200)+1
+        for(let pag=1;pag<=paginas;pag++){
+            let res = await fetch(RUTA+"/proveedores/records?perPage=200&page="+pag)
+            let data=await res.json()
+            proveedores=proveedores.concat(data.items)
+        }
+        proveedores.sort((c1,c2)=>c1.nombre.toLowerCase()<c2.nombre.toLowerCase()?-1:1)
+        proveedores_todos=proveedores
+        return proveedores
     }
     function num2Curr(number){
         const numberFormat = new Intl.NumberFormat('es-ES');
@@ -303,6 +257,19 @@
                     {/each}
                     
                 {/await}
+            </select>
+        </Col>
+        <Col>
+            Tipo Proveedor
+            <br>
+            <select bind:value="{codTipoProveedor}" name="tipoProveedor" id="tipoProveedor" size="1" >
+                {#await getTipoProveedores() then tp}
+                    <option value=""></option>
+                    {#each tp as t}
+                        <option value="{t.id}">{t.nombre}</option>
+                    {/each}
+                    
+                {/await}                                 
             </select>
         </Col>
     </Row>
@@ -378,11 +345,11 @@
         </Col>
         <Col>
             <br>
-            <h4>Egreso Total : ${num2Curr(total)}</h4>
+            <h4>Egreso Total : ${num2Curr(monto_total)}</h4>
         </Col>
         <Col>
             {#await egresos_promise then egreso}
-                <Exporttable table={egresos_todos} headers={["monto","fecha","agente","modo","unidad","tipo"]}></Exporttable>    
+                <Exporttable table={egresos_todos} headers={["fecha","monto","agente","modo","unidad","tipo"]}></Exporttable>    
             {/await}
             
         </Col>

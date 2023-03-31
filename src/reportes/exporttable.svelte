@@ -28,11 +28,6 @@
         result.setDate(result.getDate() + dias);
         return result;
     }
-    // NO funciona el num2Curr
-    function num2Curr(number){
-        const numberFormat = new Intl.NumberFormat('es-ES');
-        return numberFormat.format(number)
-    }
     async function table2table(old_table){
         let new_table=[]
         for(let i=0;i<old_table.length;i++){
@@ -51,7 +46,7 @@
                 elem["tipo"]="egreso"
                 elem.monto=-1*elem.monto
             }
-            elem.monto='"'+num2Curr(elem.monto)+'"'
+            elem.monto=elem.monto
             new_table.push(elem)
         }
         return new_table

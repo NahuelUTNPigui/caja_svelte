@@ -24,72 +24,54 @@
             egresos=[]
             let res=await fetch(RUTA+"/egreso/records?perPage=1&page=1")
             let data_eg_q=await res.json()
-            if(data_eg_q.totalItems>200){
-                let paginas=Math.floor(data_eg_q.totalItems/200)+1
-                for(let i=1;i<=paginas;i++){
-                    let res_eg=await fetch(RUTA+"/egreso/records?perPage=200&page="+i)
-                    let data_eg=await res_eg.json()
-                    
-                    egresos=egresos.concat(data_eg.items.filter(eg=>{
-                        return (fechaDesde==="" || eg.fechaEgreso>=fechaDesde) && (fechaHasta==="" || eg.fechaEgreso<=fechaHasta)
-                    }))
-                
-                }
 
-                if (egresos.length===0){
-                    pagina_actual=0
+            let paginas=Math.floor(data_eg_q.totalItems/200)+1
+            for(let i=1;i<=paginas;i++){
+                let res_eg=await fetch(RUTA+"/egreso/records?perPage=200&page="+i)
+                let data_eg=await res_eg.json()
+                
+                egresos=egresos.concat(data_eg.items.filter(eg=>{
+                    return (fechaDesde==="" || eg.fechaEgreso>=fechaDesde) && (fechaHasta==="" || eg.fechaEgreso<=fechaHasta)
+                }))
+            
+            }
+            egresos.sort((a,b)=>{
+                if(new Date(a.fechaEgreso)>new Date(b.fechaEgreso)){
+                    return -1
+                }
+                else if(new Date(a.fechaEgreso  )<new Date(b.fechaEgreso)){
+                    return 1
                 }
                 else{
-                    pagina_actual=pagina
+                    return 0
                 }
-                paginas_totales=egresos.length/itemxpagina|0
-                if(egresos.length%itemxpagina !== 0){
-                    paginas_totales += 1
-                }
-                pages_promise=[]
-                for(let i=1;i<=paginas_totales;i++){
-                    pages_promise.push(i)
-                }
-                egreso_pagina=[]
-                for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>egresos.length?egresos.length:pagina*itemxpagina);i++){
-                    egreso_pagina.push(egresos[i])
-                }
-                
-                return egreso_pagina
+            })
+            if (egresos.length===0){
+                pagina_actual=0
             }
             else{
-
-                let res_eg=await fetch(RUTA+"/egreso/records?perPage="+data_eg_q.totalItems+"&page=1")
-                let data=await res_eg.json()
-
-                let egresos = data.items.filter(eg=>{
-                    return (fechaDesde==="" || eg.fechaEgreso>=fechaDesde) && (fechaHasta==="" || eg.fechaEgreso<=fechaHasta)
-                })
-                if (egresos.length===0){
-                    pagina_actual=0
-                }
-                else{
-                    pagina_actual=pagina
-                }
-                paginas_totales=egresos.length/itemxpagina|0
-                if(egresos.length%itemxpagina !== 0){
-                    paginas_totales += 1
-                }
-                pages_promise=[]
-                for(let i=1;i<=paginas_totales;i++){
-                    pages_promise.push(i)
-                }
-                egreso_pagina=[]
-                for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>egresos.length?egresos.length:pagina*itemxpagina);i++){
-                    egreso_pagina.push(egresos[i])
-                }
-                
-                return egreso_pagina
+                pagina_actual=pagina
             }
+            paginas_totales=egresos.length/itemxpagina|0
+            if(egresos.length%itemxpagina !== 0){
+                paginas_totales += 1
+            }
+            pages_promise=[]
+            for(let i=1;i<=paginas_totales;i++){
+                pages_promise.push(i)
+            }
+            let egreso_pagina=[]
+            for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>egresos.length?egresos.length:pagina*itemxpagina);i++){
+                egreso_pagina.push(egresos[i])
+            }
+            
+            return egreso_pagina
+            
+
         }
         else{
             pagina_actual=pagina
-            egreso_pagina=[]
+            let egreso_pagina=[]
             for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>egresos.length?egresos.length:pagina*itemxpagina);i++){
 
                 egreso_pagina.push(egresos[i])
@@ -97,50 +79,6 @@
 
             return egreso_pagina
         }
-        /*
-            let res=await fetch(RUTA+"/egreso/records?perPage=1&page=1")
-            let data_eg_q=await res.json()
-            let res_eg=await fetch(RUTA+"/egreso/records?perPage="+data_eg_q.totalItems+"&page=1")
-            
-            let data=await res_eg.json()
-
-            let items=data.items.filter(eg=>{
-                return (fechaDesde==="" || eg.fechaEgreso>=fechaDesde) && (fechaHasta==="" || eg.fechaEgreso<=fechaHasta)
-            })
-            if (items.length===0){
-                pagina_actual=0
-            }
-            else{
-                pagina_actual=pagina
-            }
-            items.sort((a,b)=>{
-                if(new Date(a.fechaEgreso)>new Date(b.fechaEgreso)){
-                    return -1
-                }
-                else if(new Date(a.fechaEgreso)<new Date(b.fechaEgreso)){
-                    return 1
-                }
-                else{
-                    return 0
-                }
-            })
-            egresos_filtrados=items
-            
-            paginas_totales=items.length/itemxpagina|0
-            if(items.length%itemxpagina !== 0){
-                paginas_totales += 1
-            }
-            pages_promise=[]
-            for(let i=1;i<=paginas_totales;i++){
-                pages_promise.push(i)
-            }
-            egreso_pagina=[]
-            for(let i=(pagina-1)*itemxpagina;i<(pagina*itemxpagina>items.length?items.length:pagina*itemxpagina);i++){
-                egreso_pagina.push(egresos_filtrados[i])
-            }
-            
-            return egreso_pagina
-        */
     }
     async function eliminarEgresoBD(){
         await fetch(RUTA+"/egreso/records/"+idEgresoEliminar,{
