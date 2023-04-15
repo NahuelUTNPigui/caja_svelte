@@ -2,6 +2,7 @@
     import {Button} from "sveltestrap"
     export let table=[]
     export let headers=[]
+    export let titulo=""
     const RUTA="http://localhost:8090/api/collections"
     async function getClienteNombre(codClient){
         let res=await fetch(RUTA+"/cliente/records/"+codClient)
@@ -23,10 +24,29 @@
         let data=await res.json()
         return data.nombre
     }
+    async function getRubroNombre(codCliente){
+        let res_c=await fetch(RUTA+"/cliente/records/"+codCliente)
+        let data_c=await res_c.json()
+        let res=await fetch(RUTA+"/rubro/records/"+data_c.codRubro)
+        let data=await res.json()
+        return data.nombre
+    }
+    async function getTipoProveedorNombre(codProveedor){
+        let res_p=await fetch(RUTA+"/proveedores/records/"+codProveedor)
+        let data_p=await res_p.json()
+        let res=await fetch(RUTA+"/tipoproveedor/records/"+data_p.codTipo)
+        let data =await res.json()
+        return data.nombre
+    }
     function addDays(fecha,dias){
         var result = new Date(fecha);
         result.setDate(result.getDate() + dias);
         return result;
+    }
+    // NO funciona el num2Curr
+    function num2Curr(number){
+        const numberFormat = new Intl.NumberFormat('es-ES');
+        return numberFormat.format(number)
     }
     async function table2table(old_table){
         let new_table=[]
@@ -36,17 +56,20 @@
             elem["unidad"]=await getUnidadNombre(elem.codUnidad)
             if(elem.codCliente){
                 elem["agente"]=await getClienteNombre(elem.codCliente)
+                elem["subtipo"]=await getRubroNombre(elem.codCliente)
                 elem["fecha"]=addDays(new Date(elem.fechaIngreso),1).toLocaleDateString()
                 elem["tipo"]="ingreso"
                 
             }
             else{
                 elem["agente"]=await getProveedorNombre(elem.codProveedor)
+                elem["subtipo"]=await getTipoProveedorNombre(elem.codProveedor)
                 elem["fecha"]=addDays(new Date(elem.fechaEgreso),1).toLocaleDateString()
                 elem["tipo"]="egreso"
+                
                 elem.monto=-1*elem.monto
             }
-            elem.monto=elem.monto
+            elem.monto='"'+num2Curr(elem.monto)+'"'
             new_table.push(elem)
         }
         return new_table
@@ -83,7 +106,7 @@
         var blob = new Blob(items,
                 { type: "text/plain;charset=utf-8" });
             // @ts-ignore
-            saveAs(blob, "reporte_"+new Date().toLocaleDateString()+".csv");
+            saveAs(blob, titulo+" reporte: "+new Date().toLocaleDateString()+".csv");
         }
 		
     

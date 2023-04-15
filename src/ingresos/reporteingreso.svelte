@@ -1,7 +1,13 @@
 <script>
     import { Container,Row,Col,Table,Label,Input,Button,ButtonGroup } from "sveltestrap";
+    // @ts-ignore
+    import {Router,Link,navigate} from 'svelte-routing'
+    // @ts-ignore
+    import { jsPDF } from "jspdf";
+    import autoTable from 'jspdf-autotable'
     import Exporttable from "../reportes/exporttable.svelte";
     const RUTA="http://localhost:8090/api/collections"
+    export let url=""
     let fechaDesde=""
     let fechaHasta=""
     let codUnidad=""
@@ -12,6 +18,7 @@
     let montoDesde=0
     let montoHasta=0
     let monto_total=0
+    // @ts-ignore
     let total=0
     let ordenar_por=""
     let ingresos_todos=[]
@@ -195,6 +202,16 @@
         rubros.sort((r1,r2)=>r1.nombre.toLowerCase()<r2.nombre.toLowerCase()?-1:1)
         return rubros
     }
+    async function getCliente(codClient){
+        let res=await fetch(RUTA+"/cliente/records/"+codClient)
+        let data=await res.json()
+        return data
+    }
+    async function getRubroNombre(codRubro){
+        let res=await fetch(RUTA+"/rubro/records/"+codRubro)
+        let data=await res.json()
+        return data.nombre
+    }
     async function getClientes(){
         let clientes=[]
         let res_p=await fetch(RUTA+"/cliente/records?page=1&perPage=1")
@@ -208,6 +225,36 @@
         clientes.sort((c1,c2)=>c1.nombre.toLowerCase()<c2.nombre.toLowerCase()?-1:1)
         clientes_todos=clientes
         return clientes
+    }
+    async function crearPDF(){
+        if(ingresos_todos.length==0){
+            return
+        }
+        // Default export is a4 paper, portrait, using millimeters for units
+        const doc = new jsPDF();
+        let body_table=[]
+        for(let i_i=0;i_i<ingresos_todos.length;i_i++){
+            let i = ingresos_todos[i_i]
+            let row =[]
+            let c = await getCliente(i.codCliente)
+            row.push(addDays(i.fechaIngreso,1).toLocaleDateString())
+            row.push(num2Curr(i.monto))
+            row.push(c.nombre)
+            row.push(await getRubroNombre(c.codRubro))
+            row.push(await getModoNombre(i.codModo))
+            row.push(await getUnidadNombre(i.codUnidad))
+            row.push(i.observacion)
+            body_table.push(row)
+            
+        }
+        doc.text("Reporte ingreso: "+new Date().toLocaleDateString(), 5, 5);
+        autoTable(doc, {
+            columnStyles:{1:{halign:'right'}},
+            head: [['Fecha','Monto','Cliente','Rubro','Modo','Unidad','Observacion']],
+            body: body_table
+        })
+       
+        doc.save("ingresos_"+new Date().toLocaleDateString()+".pdf");
     }
     function num2Curr(number){
         const numberFormat = new Intl.NumberFormat('es-ES');
@@ -226,7 +273,7 @@
 <Container>
     <Row>
         <Col>
-            <h2>Reporte ingresos</h2>
+            <h2>Reporte Ingresos</h2>
         </Col>
     </Row>
     <Row>
@@ -262,7 +309,7 @@
             </select>
         </Col>
         <Col>
-            Rubro
+            <Label> Rubro</Label>
             <br>    
             <select bind:value="{codRubro}" name="rubro" id="rubro" size="1">
                 <option value=""></option>
@@ -350,11 +397,17 @@
             <h4>Ingreso Total : ${num2Curr(monto_total)}</h4>
         </Col>
         <Col>
+            <br>
             {#await ingresos_promise then ingreso}
-                <Exporttable table={ingresos_todos} headers={["fecha","monto","agente","modo","unidad","tipo"]}></Exporttable>
+                <Exporttable table={ingresos_todos} headers={["fecha","monto","agente","subtipo","modo","unidad","tipo","observacion"]} titulo="Ingreso"></Exporttable>
             {/await}
-            <!--Ya se me va a ocurrir algo-->
-            <!--<Exporttable table={async ()=>await ingresos_promise} headers={["monto","fecha","agente","modo","unidad","tipo"]}></Exporttable>-->
+            
+        </Col>
+        <Col>
+            <br>
+            {#await ingresos_promise then ingreso}
+                <Button on:click={crearPDF}>Crear documento PDF</Button>
+            {/await}
         </Col>
     </Row>
     <hr>
@@ -397,9 +450,10 @@
                     <th>Fecha</th>
                     <th>Monto</th>
                     <th>Cliente</th>
+                    <th>Rubro</th>
                     <th>Modo</th>
                     <th>Unidad</th>
-                    
+                    <th>Accion</th>
                 </tr>
             </thead>
             {#await ingresos_promise then is}
@@ -414,6 +468,14 @@
                                 {/await}
                             </td>
                             <td>
+                                {#await  getCliente(i.codCliente) then c}
+                                    {#await getRubroNombre(c.codRubro) then n}
+                                        {n}
+                                    {/await}
+                                    
+                                {/await}
+                            </td>
+                            <td>
                                 {#await getModoNombre(i.codModo) then n}
                                     {n}
                                 {/await}
@@ -422,6 +484,13 @@
                                 {#await getUnidadNombre(i.codUnidad) then n}
                                     {n}
                                 {/await}
+                            </td>
+                            <td>
+                                <Router url="{url}">
+                                    <nav>
+                                        <Link to="/detail_ingreso/{i.id}">Modificar</Link>
+                                    </nav>
+                                </Router>
                             </td>
                         </tr>                        
                     {/each}

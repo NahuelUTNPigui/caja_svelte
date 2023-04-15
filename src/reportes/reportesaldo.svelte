@@ -1,11 +1,16 @@
 <script>
     import { Container,Row,Col,Table,Label,Input,Button,ButtonGroup } from "sveltestrap";
     import Exporttable from "../reportes/exporttable.svelte";
+    // @ts-ignore
+    import { jsPDF } from "jspdf";
+    import autoTable from 'jspdf-autotable'
     const RUTA="http://localhost:8090/api/collections"
     let fechaDesde=""
     let fechaHasta=""
     let codUnidad=""
     let codModo=""
+    let codRubro="0"
+    let codTipoProveedor="0"
     let montoDesde=0
     let pagina_actual=1
     let itemxpagina=30
@@ -43,7 +48,7 @@
     }
     function sortByMonto(trans1,trans2){
 
-        return trans1.monto-trans2.monto
+        return -trans1.monto+trans2.monto
 
     }
     function filt(trans,esIngreso){
@@ -87,6 +92,26 @@
                 return false
             }
         }
+        if(codTipoProveedor!="0"){
+            if(!esIngreso){
+                if(trans.proveedor.codTipo!=codTipoProveedor){
+                    return false
+                }
+                
+            }
+            
+        }
+        if(codRubro!=="0"){
+            if(esIngreso){
+                
+                if(trans.cliente.codRubro!=codRubro){
+                    
+                    return false
+                }
+                
+            }
+            
+        }
         if(trans.monto<montoDesde){
             return false
         }
@@ -100,6 +125,7 @@
         if(pagina==1){
             total=0
             saldos_todos=[]
+            pages_promise=[]
             let res_ing=await fetch(RUTA+"/ingreso/records?perPage=1&&page=1")
             let res_eg=await fetch(RUTA+"/egreso/records?perPage=1&page=1")
             let data_ing=await res_ing.json()
@@ -109,19 +135,34 @@
             for(let i=1;i<=paginas_ing;i++){
                 let res =await fetch(RUTA+"/ingreso/records?perPage=200&&page="+i)
                 let data=await res.json()
+                for(let j=0;j<data.items.length;j++){
+                    let res_c=await fetch(RUTA+"/cliente/records/"+data.items[j].codCliente)
+                    let c=await res_c.json()
+                    data.items[j].cliente=c
+                }
                 saldos_todos=saldos_todos.concat(data.items.filter((ing)=>filt(ing,true)))
             }
             for(let i=1;i<=paginas_eg;i++){
                 let res =await fetch(RUTA+"/egreso/records?perPage=200&page="+i)
                 let data=await res.json()
+                for(let j=0;j<data.items.length;j++){
+                    let res_p=await fetch(RUTA+"/proveedores/records/"+data.items[j].codProveedor)
+                    let p=await res_p.json()
+                    data.items[j].proveedor=p
+                }
                 saldos_todos=saldos_todos.concat(data.items.filter((eg)=>filt(eg,false)))
             }
+            
             if(saldos_todos.length==0){
                 pagina_actual=0
             }
             else{
                 pagina_actual=1
             }
+            
+
+
+
             //Que onda que no funciona
             let ordenar=sortByFecha
             if(ordenar_por=="monto"){
@@ -166,7 +207,32 @@
         }
 
     }
-    
+    async function getRubros(){
+        let rubros=[]
+        let res_p=await fetch(RUTA+"/rubro/records?page=1&perPage=1")
+        let data_p=await res_p.json()
+        let paginas= Math.floor(data_p.totalItems/200)+1
+        for(let pag=1;pag<=paginas;pag++){
+            let res=await fetch(RUTA+"/rubro/records?perPage=200&page="+pag)
+            let data=await res.json()
+            rubros=rubros.concat(data.items)
+        }
+        rubros.sort((r1,r2)=>r1.nombre.toLowerCase()<r2.nombre.toLowerCase()?-1:1)
+        return rubros
+    }
+    async function getTipoProveedores(){
+        let tipoproveedores=[]
+        let res_p=await fetch(RUTA+"/tipoproveedor/records?page=1&perPage=1")
+        let data_p = await res_p.json()
+        let paginas= Math.floor(data_p.totalItems/200)+1
+        for(let pag=1;pag<=paginas;pag++){
+            let res=await fetch(RUTA+"/tipoproveedor/records?perPage=200&page="+pag)
+            let data=await res.json()
+            tipoproveedores=tipoproveedores.concat(data.items)
+        }
+        tipoproveedores.sort((t1,t2)=>t1.nombre.toLowerCase()<t2.nombre.toLowerCase()?-1:1)
+        return tipoproveedores
+    }
     async function getClienteNombre(codClient){
         let res=await fetch(RUTA+"/cliente/records/"+codClient)
         let data=await res.json()
@@ -187,6 +253,20 @@
         let data=await res.json()
         return data.nombre
     }
+    async function getRubroNombre(codCliente){
+        let res_c=await fetch(RUTA+"/cliente/records/"+codCliente)
+        let data_c=await res_c.json()
+        let res=await fetch(RUTA+"/rubro/records/"+data_c.codRubro)
+        let data=await res.json()
+        return data.nombre
+    } 
+    async function getTipoProveedorNombre(codProveedor){
+        let res_p=await fetch(RUTA+"/proveedores/records/"+codProveedor)
+        let data_p=await res_p.json()
+        let res=await fetch(RUTA+"/tipoproveedor/records/"+data_p.codTipo)
+        let data =await res.json()
+        return data.nombre
+    }
     async function getUnidades(){
         let unidades=[]
         let res=await fetch(RUTA+"/unidades/records")
@@ -202,6 +282,47 @@
         modos=data.items
         modos.sort((m1,m2)=>m1.nombre.toLowerCase()<m2.nombre.toLowerCase()?-1:1)
         return modos
+    }
+    async function crearPDF(){
+        if(saldos_todos.length===0){
+            return
+        }
+        const doc = new jsPDF();
+        let body_table=[]
+        for(let s_i=0;s_i<saldos_todos.length;s_i++){
+            let s = saldos_todos[s_i]
+            let row =[]
+            let fecha = s.fechaIngreso
+            if(fecha===undefined){
+                fecha=s.fechaEgreso
+            }
+        
+            row.push(addDays(fecha,1).toLocaleDateString())
+            row.push(num2Curr(s.monto))
+            if(s.codCliente){
+                row.push(s.cliente.nombre)
+                row.push(await getRubroNombre(s.codCliente))
+            }
+            else{
+                row.push(s.proveedor.nombre)
+                row.push(await getTipoProveedorNombre(s.codProveedor))
+            }
+            
+            
+            row.push(await getModoNombre(s.codModo))
+            row.push(await getUnidadNombre(s.codUnidad))
+            row.push(s.observacion)
+            body_table.push(row)
+            
+        }
+        doc.text("Reporte saldo: "+new Date().toLocaleDateString(), 5, 5);
+        autoTable(doc, {
+            columnStyles:{1:{halign:'right'}},
+            head: [['Fecha','Monto','Agente','SubTipo','Modo','Unidad','Observacion']],
+            body: body_table
+        })
+       
+        doc.save("saldos-"+new Date().toLocaleDateString()+".pdf");
     }
     function num2Curr(number){
         const numberFormat = new Intl.NumberFormat('es-ES');
@@ -222,6 +343,7 @@
             <h2>Reporte Saldo</h2>
         </Col>
     </Row>
+
     <Row>
         <Col>
             <Label for="fechaDesde">Fecha desde</Label>
@@ -240,6 +362,33 @@
                 id="fechaHasta"
                 bind:value="{fechaHasta}"
             />
+        </Col>
+        <Col>
+            <Label> Rubro</Label>
+            <br>    
+            <select bind:value="{codRubro}" name="rubro" id="rubro" size="1">
+                <option value="0"></option>
+                {#await getRubros() then rs}
+                    {#each rs as r}
+                        <option value="{r.id}">{r.nombre}</option>
+                    {/each}
+                    
+                {/await}
+                
+            </select>
+        </Col>
+        <Col>
+            <Label> Tipo Proveedor</Label>
+            <br>
+            <select bind:value="{codTipoProveedor}" name="tipoProveedor" id="tipoProveedor" size="1" >
+                <option value="0"></option>
+                {#await getTipoProveedores() then tp}
+                    {#each tp as t}
+                        <option value="{t.id}">{t.nombre}</option>
+                    {/each}
+                    
+                {/await}                           
+            </select>
         </Col>
     </Row>
     <Row>
@@ -317,11 +466,16 @@
             <h4>Saldo Total $ <span class="{total>0?'positivo':'negativo'}">{num2Curr(total)}</span></h4>
         </Col>
         <Col>
-
+            <br>
             {#await saldo_promise then ss}
-                <Exporttable table={saldos_todos} headers={["fecha","monto","agente","modo","unidad","tipo"]} ></Exporttable>    
+                <Exporttable table={saldos_todos} headers={["fecha","monto","agente","subtipo","modo","unidad","tipo","observacion"]} titulo="Saldo"></Exporttable>    
             {/await}
-            
+        </Col>
+        <Col>
+            <br>
+            {#await saldo_promise then ss}
+                <Button on:click={crearPDF}>Crear documento PDF</Button>
+            {/await}
         </Col>
     </Row>
     <hr>
@@ -368,6 +522,7 @@
                     <th>Fecha</th>
                     <th>Monto</th>
                     <th>Agente</th>
+                    <th>Sub tipo</th>
                     <th>Modo</th>
                     <th>Unidad</th>
                     
@@ -396,6 +551,17 @@
                                     {/await}
                                 {/if}
 
+                            </td>
+                            <td>
+                                {#if s.codCliente}
+                                    {#await getRubroNombre(s.codCliente) then n}
+                                        {n}
+                                    {/await}
+                                {:else}
+                                    {#await getTipoProveedorNombre(s.codProveedor) then n}
+                                        {n}
+                                    {/await}
+                                {/if}
                             </td>
                             <td>
                                 {#await getModoNombre(s.codModo) then n}

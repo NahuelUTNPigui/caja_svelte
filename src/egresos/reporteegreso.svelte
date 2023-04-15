@@ -1,7 +1,12 @@
 <script>
     import { Container,Row,Col,Table,Label,Input,Button,ButtonGroup } from "sveltestrap";
+    import {Router,Link,navigate} from 'svelte-routing'
     import Exporttable from "../reportes/exporttable.svelte";
+    // @ts-ignore
+    import { jsPDF } from "jspdf";
+    import autoTable from 'jspdf-autotable'
     const RUTA="http://localhost:8090/api/collections"
+    export let url=""
     let fechaDesde=""
     let fechaHasta=""
     let codUnidad=""
@@ -19,7 +24,7 @@
     let paginas_totales=1
     let pages_promise=[]
     let egresos_todos=[]    
-    let egresos_promise=getEgresosPagina(1)
+    let egresos_promise=getEgresosPagina(0)
 
     function sortByMonto(a,b){
         return b.monto-a.monto
@@ -149,6 +154,11 @@
             return egreso_pagina
         }
     }
+    async function getProveedor(codProv){
+        let res=await fetch(RUTA+"/proveedores/records/"+codProv)
+        let data=await res.json()
+        return data
+    }
     async function getProveedorNombre(idProv){
         let res=await fetch(RUTA+"/proveedores/records/"+idProv)
         let data=await res.json()
@@ -193,6 +203,13 @@
         tipoproveedores.sort((t1,t2)=>t1.nombre.toLowerCase()<t2.nombre.toLowerCase()?-1:1)
         return tipoproveedores
     }
+    async function getTipoProveedorNombre(codTipo){
+        let res = await fetch(RUTA+"/tipoproveedor/records/"+codTipo)
+        
+        let data=await res.json()
+        
+        return data.nombre
+    }
     async function getProveedores(){
         let proveedores=[]
         let res_p=await fetch(RUTA+"/proveedores/records?page=1&perPage=1")
@@ -206,6 +223,37 @@
         proveedores.sort((c1,c2)=>c1.nombre.toLowerCase()<c2.nombre.toLowerCase()?-1:1)
         proveedores_todos=proveedores
         return proveedores
+    }
+    async function crearPDF(){
+        if(egresos_todos.length===0){
+            return
+        }
+        // Default export is a4 paper, portrait, using millimeters for units
+        const doc = new jsPDF();
+        let body_table=[]
+        for(let e_i=0;e_i<egresos_todos.length;e_i++){
+            let e = egresos_todos[e_i]
+            let row =[]
+            let p = await getProveedor(e.codProveedor)
+            row.push(addDays(e.fechaEgreso,1).toLocaleDateString())
+            row.push(num2Curr(e.monto))
+            row.push(p.nombre)
+            row.push(await getTipoProveedorNombre(p.codTipo))
+            row.push(await getModoNombre(e.codModo))
+            row.push(await getUnidadNombre(e.codUnidad))
+            row.push(e.observacion)
+            body_table.push(row)
+            
+        }
+        doc.text("Reporte egreso: "+new Date().toLocaleDateString(), 5, 5);
+        autoTable(doc, {
+            columnStyles:{1:{halign:'right'}},
+            head: [['Fecha','Monto','Proveedor','Tipo Proveedor','Modo','Unidad','Observacion']],
+            body: body_table
+        })
+       
+        doc.save("egresos-"+new Date().toLocaleDateString()+".pdf");
+
     }
     function num2Curr(number){
         const numberFormat = new Intl.NumberFormat('es-ES');
@@ -223,8 +271,7 @@
 <Container>
     <Row>
         <Col>
-            <h2>Reporte egresos</h2>
-            
+            <h2>Reporte Egresos</h2>
         </Col>
     </Row>
     <Row>
@@ -260,7 +307,7 @@
             </select>
         </Col>
         <Col>
-            Tipo Proveedor
+            <Label> Tipo Proveedor</Label>
             <br>
             <select bind:value="{codTipoProveedor}" name="tipoProveedor" id="tipoProveedor" size="1" >
                 {#await getTipoProveedores() then tp}
@@ -348,10 +395,16 @@
             <h4>Egreso Total : ${num2Curr(monto_total)}</h4>
         </Col>
         <Col>
+            <br>
             {#await egresos_promise then egreso}
-                <Exporttable table={egresos_todos} headers={["fecha","monto","agente","modo","unidad","tipo"]}></Exporttable>    
+                <Exporttable table={egresos_todos} headers={["fecha","monto","agente","subtipo","modo","unidad","tipo","observacion"]} titulo="Egreso"></Exporttable>    
             {/await}
-            
+        </Col>
+        <Col>
+            <br>
+            {#await egresos_promise then egreso}
+                <Button on:click={crearPDF}>Crear documento PDF</Button>
+            {/await}
         </Col>
     </Row>
     <hr>
@@ -398,9 +451,10 @@
                     <th>Fecha</th>
                     <th>Monto</th>
                     <th>Proveedor</th>
+                    <th>Tipo Proveedor</th>
                     <th>Modo</th>
                     <th>Unidad</th>
-                    
+                    <th>Accion</th>
                     
                 </tr>
             </thead>
@@ -416,6 +470,14 @@
                                 {/await}
                             </td>
                             <td>
+                                {#await getProveedor(e.codProveedor) then p}
+                                
+                                    {#await getTipoProveedorNombre(p.codTipo) then n}
+                                        {n}
+                                    {/await}
+                                {/await}
+                            </td>
+                            <td>
                                 {#await getModoNombre(e.codModo) then n}
                                     {n}
                                 {/await}
@@ -425,7 +487,13 @@
                                     {n}
                                 {/await}
                             </td>
-                            
+                            <td>
+                                <Router url="{url}">
+                                    <nav>
+                                        <Link to="/detail_egreso/{e.id}">Modificar</Link>
+                                    </nav>
+                                </Router>
+                            </td>
                         </tr>                        
                     {/each}
 
