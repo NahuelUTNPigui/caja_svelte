@@ -124,11 +124,11 @@
     <Modal isOpen={open} {toggle}>
       <ModalHeader {toggle}>Eliminar egreso</ModalHeader>
       <ModalBody>
-        Esta seguro que desea eliminar el Egreso?.
+        ¿Esta seguro que desea eliminar el Egreso?
       </ModalBody>
       <ModalFooter>
         <Button color="danger" on:click={eliminarEgresoBD}>Eliminar</Button>
-        <Button color="secondary" on:click={cancelarModal}>Cancel</Button>
+        <Button color="secondary" on:click={cancelarModal}>Cancelar</Button>
       </ModalFooter>
     </Modal>
   </div>

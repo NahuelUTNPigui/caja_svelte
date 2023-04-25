@@ -40,24 +40,7 @@
         tipos_promise=items
         return items
     }
-    /* async function getTipos() {
-        let res=await fetch(RUTA+"/tipoproveedor/records")
-        let data=await res.json()
-        let items=data.items
-        items.sort((a,b)=>{
-            let aup=a.nombre.toUpperCase()
-            let bup=b.nombre.toUpperCase()
-            if(aup>bup){
-                return 1
-            }
-            else if(bup>aup){
-                return -1
-            }
-            return 0
-
-        })
-        return items
-    } */
+    
     async function eliminarTipoBD() {
         await fetch(RUTA+"/tipoproveedor/records/"+idEliminarTipoProveedor,{
             method:"DELETE"
@@ -84,13 +67,13 @@
     <Modal isOpen={open} {toggle}>
       <ModalHeader {toggle}>Eliminar Tipo proveedor</ModalHeader>
       <ModalBody>
-        Esta seguro que desea eliminar el tipo proveedor?
+        ¿Esta seguro que desea eliminar el tipo proveedor?
         <br>
         Podria modificar algun proveedor
       </ModalBody>
       <ModalFooter>
         <Button color="danger" on:click={eliminarTipoBD}>Eliminar</Button>
-        <Button color="secondary" on:click={cancelarModal}>Cancel</Button>
+        <Button color="secondary" on:click={cancelarModal}>Cancelar</Button>
       </ModalFooter>
     </Modal>
   </div>

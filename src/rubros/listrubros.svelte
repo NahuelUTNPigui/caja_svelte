@@ -36,13 +36,13 @@
     <Modal isOpen={open} {toggle}>
       <ModalHeader {toggle}>Eliminar Rubro</ModalHeader>
       <ModalBody>
-        Esta seguro que desea eliminar el rubro?
+        ¿Esta seguro que desea eliminar el rubro?
         <br>
         Podria modificar algun ingreso o egreso
       </ModalBody>
       <ModalFooter>
         <Button color="danger" on:click={eliminarRubroBD}>Eliminar</Button>
-        <Button color="secondary" on:click={cancelarModal}>Cancel</Button>
+        <Button color="secondary" on:click={cancelarModal}>Cancelar</Button>
       </ModalFooter>
     </Modal>
   </div>

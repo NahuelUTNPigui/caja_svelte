@@ -132,11 +132,11 @@
     <Modal isOpen={open} {toggle}>
       <ModalHeader {toggle}>Eliminar ingreso</ModalHeader>
       <ModalBody>
-        Esta seguro que desea eliminar el ingreso?.
+        ¿Esta seguro que desea eliminar el ingreso?
       </ModalBody>
       <ModalFooter>
         <Button color="danger" on:click={eliminarIngresoBD}>Eliminar</Button>
-        <Button color="secondary" on:click={cancelarModal}>Cancel</Button>
+        <Button color="secondary" on:click={cancelarModal}>Cancelar</Button>
       </ModalFooter>
     </Modal>
   </div>

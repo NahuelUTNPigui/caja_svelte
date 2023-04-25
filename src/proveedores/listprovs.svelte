@@ -27,9 +27,9 @@
 
         }
         else{
-            res = await fetch(RUTA+"/proveedores/records?perPage="+itemxpagina+"&page="+pagina)
-            
+            res = await fetch(RUTA+"/proveedores/records?perPage="+itemxpagina+"&page="+pagina)   
         }
+
         let data=await res.json()
         let items=data.items
         pagina_actual=pagina
@@ -72,19 +72,22 @@
         
         proveedores_promise=items
     }
+    async function onChangeItemXpagina(){
+        proveedores_promise=getProveedoresPagina(1)
+    }
 </script>
 <main>
     <div>
         <Modal isOpen={open} {toggle}>
           <ModalHeader {toggle}>Eliminar proveedor</ModalHeader>
           <ModalBody>
-            Esta seguro que desea eliminar el proveedor?.
+            ¿Esta seguro que desea eliminar el proveedor?
             <br>
             Puede afectar a los egresos asociados
           </ModalBody>
           <ModalFooter>
             <Button color="danger" on:click={eliminarProveedorBD}>Eliminar</Button>
-            <Button color="secondary" on:click={cancelarModal}>Cancel</Button>
+            <Button color="secondary" on:click={cancelarModal}>Cancelar</Button>
           </ModalFooter>
         </Modal>
       </div>
@@ -121,6 +124,14 @@
     
                                 <Button outline color='primary' on:click={()=>getProveedoresPagina(pagina_actual<paginas_totales?pagina_actual+1:paginas_totales)}>&raquo</Button>
                             </ButtonGroup>
+                        </Col>
+                        <Col md="2">Items por pagina</Col>
+                        <Col>
+                            <select bind:value="{itemxpagina}" name="ixp" id="ixp" size="1" on:change={onChangeItemXpagina}>
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="15" >15</option>
+                            </select>
                         </Col>
                     </Row>
                 </Container>

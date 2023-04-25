@@ -114,13 +114,13 @@
         <Modal isOpen={open} {toggle}>
           <ModalHeader {toggle}>Eliminar cliente</ModalHeader>
           <ModalBody>
-            Esta seguro que desea eliminar el cliente?.
+            ¿Esta seguro que desea eliminar el cliente?
             <br>
             Podria modificar informacion en los ingresos
           </ModalBody>
           <ModalFooter>
             <Button color="danger" on:click={eliminarClienteBD}>Eliminar</Button>
-            <Button color="secondary" on:click={cancelarModal}>Cancel</Button>
+            <Button color="secondary" on:click={cancelarModal}>Cancelar</Button>
           </ModalFooter>
         </Modal>
       </div>

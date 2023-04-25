@@ -36,13 +36,13 @@
     <Modal isOpen={open} {toggle}>
       <ModalHeader {toggle}>Eliminar unidad</ModalHeader>
       <ModalBody>
-        Esta seguro que desea eliminar la unidad?
+        ¿Esta seguro que desea eliminar la unidad?
         <br>
         Podria modificar algun ingreso o egreso
       </ModalBody>
       <ModalFooter>
         <Button color="danger" on:click={eliminarUnidadBD}>Eliminar</Button>
-        <Button color="secondary" on:click={cancelarModal}>Cancel</Button>
+        <Button color="secondary" on:click={cancelarModal}>Cancelar</Button>
       </ModalFooter>
     </Modal>
   </div>

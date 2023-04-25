@@ -36,13 +36,13 @@
     <Modal isOpen={open} {toggle}>
       <ModalHeader {toggle}>Eliminar Modo de pago</ModalHeader>
       <ModalBody>
-        Esta seguro que desea eliminar el modo de pago?.
+        ¿Esta seguro que desea eliminar el modo de pago?
         <br>
         Podria modificar algun ingreso o egreso
       </ModalBody>
       <ModalFooter>
         <Button color="danger" on:click={eliminarModoBD}>Eliminar</Button>
-        <Button color="secondary" on:click={cancelarModal}>Cancel</Button>
+        <Button color="secondary" on:click={cancelarModal}>Cancelar</Button>
       </ModalFooter>
     </Modal>
   </div>
