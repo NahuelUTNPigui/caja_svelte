@@ -120,9 +120,16 @@
         let data=await res.json()
         return data.items[0]
     }
-    function num2Curr(number){
-        const numberFormat = new Intl.NumberFormat('es-ES');
-        return numberFormat.format(number)
+    function only2Dig(numb){
+        return Math.round(100*numb)/100
+    }
+    function num2Curr(numb){
+            
+        const numberFormat = new Intl.NumberFormat('es-ar',{
+            style:"currency",
+            currency:"ARS"
+        });
+        return numberFormat.format(only2Dig(numb))
     }
     function onChangeItemXpagina(){
         ingresos_promise = getIngresosPagina(1)
@@ -222,7 +229,7 @@
                 {#each is as i}
                     <tr> 
                         <td>{addDays(new Date(i.fechaIngreso),1,i).toLocaleDateString()}</td>
-                        <td>{num2Curr(i.monto)}</td>
+                        <td class="text-end">{num2Curr(i.monto)}</td>
                         <td>
                             {#await getClienteNombre(i.codCliente) then n}
                                 {n}

@@ -3,13 +3,6 @@
     import { navigate } from "svelte-routing";
     import {Container,Row,Col,Label,Input,Form,Button} from "sveltestrap"
     const RUTA="http://localhost:8090/api/collections"
-    export let codEgreso="0"
-    onMount(async ()=>{
-        if(codEgreso!=="0"){
-            await getEgreso(codEgreso)
-        }
-    })
-    
     let monto=0
     let last_monto=0
     let codProv="0"
@@ -24,10 +17,22 @@
         noFecha:false,
         noUnidad:false
     }
-
+    export let codEgreso="0"
     let modos_promise=getModos()
     let proveedores_promise=getProveedores()
     let unidades_promise=getUnidades()
+    onMount(async ()=>{
+        
+        if(codEgreso!=="0"){
+            await getProveedores()
+            await getEgreso(codEgreso)
+            
+        }
+    })
+    
+    
+
+    
     async function getModos(){
         let res=await fetch(RUTA+"/modopago/records?perPage=100&&page=1")
         let data=await res.json()

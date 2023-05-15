@@ -6,6 +6,7 @@
     export let codIngreso="0"
     onMount(async ()=>{
         if(codIngreso!=="0"){
+            await getClientes()
             getIngreso(codIngreso)
         }
     })

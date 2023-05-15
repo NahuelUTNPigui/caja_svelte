@@ -1,5 +1,7 @@
 <script>
     import {Button} from "sveltestrap"
+    //import { saveAs } from 'file-saver';
+    //import { saveAs } from 'file-saver';
     export let table=[]
     export let headers=[]
     export let titulo=""
@@ -44,14 +46,19 @@
         return result;
     }
     // NO funciona el num2Curr
-    function num2Curr(number){
+    function only2Dig(numb){
+        return Math.round(100*numb)/100
+    }
+    function num2Curr(numb){
+        
         const numberFormat = new Intl.NumberFormat('es-ES');
-        return numberFormat.format(number)
+        return numberFormat.format(only2Dig(numb))
     }
     async function table2table(old_table){
         let new_table=[]
         for(let i=0;i<old_table.length;i++){
             let elem=old_table[i]
+            //console.log(old_table[i])
             elem["modo"]=await getModoNombre(elem.codModo)
             elem["unidad"]=await getUnidadNombre(elem.codUnidad)
             if(elem.codCliente){

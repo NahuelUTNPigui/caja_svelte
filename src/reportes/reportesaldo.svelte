@@ -1,5 +1,7 @@
 <script>
     import { Container,Row,Col,Table,Label,Input,Button,ButtonGroup } from "sveltestrap";
+    import {Router,Link,navigate} from 'svelte-routing'
+    export let url=""
     import Exporttable from "../reportes/exporttable.svelte";
     // @ts-ignore
     import { jsPDF } from "jspdf";
@@ -298,14 +300,19 @@
             }
         
             row.push(addDays(fecha,1).toLocaleDateString())
-            row.push(num2Curr(s.monto))
+            
+            
             if(s.codCliente){
+                row.push(num2Curr(s.monto))
                 row.push(s.cliente.nombre)
                 row.push(await getRubroNombre(s.codCliente))
+                
             }
             else{
+                row.push(num2Curr(-1 * s.monto))
                 row.push(s.proveedor.nombre)
                 row.push(await getTipoProveedorNombre(s.codProveedor))
+                
             }
             
             
@@ -315,7 +322,8 @@
             body_table.push(row)
             
         }
-        doc.text("Reporte saldo: "+new Date().toLocaleDateString(), 5, 5);
+        doc.text("Reporte saldo: "+new Date().toLocaleDateString(), 5, 8);
+        doc.text("Saldo final: $"+num2Curr(total),100,8);
         autoTable(doc, {
             columnStyles:{1:{halign:'right'}},
             head: [['Fecha','Monto','Agente','SubTipo','Modo','Unidad','Observacion']],
@@ -324,9 +332,16 @@
        
         doc.save("saldos-"+new Date().toLocaleDateString()+".pdf");
     }
-    function num2Curr(number){
-        const numberFormat = new Intl.NumberFormat('es-ES');
-        return numberFormat.format(number)
+    function only2Dig(numb){
+        return Math.round(100*numb)/100
+    }
+    function num2Curr(numb){
+            
+        const numberFormat = new Intl.NumberFormat('es-ar',{
+            style:"currency",
+            currency:"ARS"
+        });
+        return numberFormat.format(only2Dig(numb))
     }
     function addDays(date,days){
         var result = new Date(date);
@@ -463,7 +478,7 @@
         </Col>
         <Col>
             <br>
-            <h4>Saldo Total $ <span class="{total>0?'positivo':'negativo'}">{num2Curr(total)}</span></h4>
+            <h4>Saldo Total <span class="{total>0?'positivo':'negativo'}">{num2Curr(total)}</span></h4>
         </Col>
         <Col>
             <br>
@@ -474,7 +489,7 @@
         <Col>
             <br>
             {#await saldo_promise then ss}
-                <Button on:click={crearPDF}>Crear documento PDF</Button>
+                <Button on:click={crearPDF}>Generar PDF</Button>
             {/await}
         </Col>
     </Row>
@@ -525,7 +540,7 @@
                     <th>Sub tipo</th>
                     <th>Modo</th>
                     <th>Unidad</th>
-                    
+                    <th>Acciones</th>
                 </tr>
             </thead>
             {#await saldo_promise then ss}
@@ -539,7 +554,14 @@
                                     {addDays(new Date(s.fechaEgreso),1).toLocaleDateString()}
                                 {/if}
                             </td>
-                            <td>{num2Curr(s.monto)}</td>
+                            <td class="text-end">
+                                {#if s.codCliente}
+                                    {num2Curr(s.monto)}
+                                {:else}
+                                    {num2Curr(-1 * s.monto)}
+                                {/if}
+                                
+                            </td>
                             <td>
                                 {#if s.codCliente}
                                     {#await getClienteNombre(s.codCliente) then n}
@@ -572,6 +594,22 @@
                                 {#await getUnidadNombre(s.codUnidad) then n}
                                     {n}
                                 {/await}
+                            </td>
+                            <td>
+                                {#if s.codCliente}
+                                    <Router url="{url}">
+                                        <nav>
+                                            <Link to="/detail_ingreso/{s.id}">Modificar</Link>
+                                        </nav>
+                                    </Router>
+                                {:else}
+                                    <Router url="{url}">
+                                        <nav>
+                                            <Link to="/detail_egreso/{s.id}">Modificar</Link>
+                                        </nav>
+                                    </Router>
+                                {/if}
+
                             </td>
                         </tr>                        
                     {/each}

@@ -174,6 +174,7 @@
         let data=await res.json()
         return data.nombre
     }
+    
     async function getUnidades(){
         let unidades=[]
         let res=await fetch(RUTA+"/unidades/records?perPage=100&&page1")
@@ -245,7 +246,8 @@
             body_table.push(row)
             
         }
-        doc.text("Reporte egreso: "+new Date().toLocaleDateString(), 5, 5);
+        doc.text("Reporte egreso: "+new Date().toLocaleDateString(), 5, 8);
+        doc.text("Egreso total: $"+num2Curr(monto_total),100,8)
         autoTable(doc, {
             columnStyles:{1:{halign:'right'}},
             head: [['Fecha','Monto','Proveedor','Tipo Proveedor','Modo','Unidad','Observacion']],
@@ -255,9 +257,16 @@
         doc.save("egresos-"+new Date().toLocaleDateString()+".pdf");
 
     }
-    function num2Curr(number){
-        const numberFormat = new Intl.NumberFormat('es-ES');
-        return numberFormat.format(number)
+    function only2Dig(numb){
+        return Math.round(100*numb)/100
+    }
+    function num2Curr(numb){
+            
+        const numberFormat = new Intl.NumberFormat('es-ar',{
+            style:"currency",
+            currency:"ARS"
+        });
+        return numberFormat.format(only2Dig(numb))
     }
     function addDays(date,days){
         var result = new Date(date);
@@ -392,7 +401,7 @@
         </Col>
         <Col>
             <br>
-            <h4>Egreso Total : ${num2Curr(monto_total)}</h4>
+            <h4>Egreso Total : {num2Curr(monto_total)}</h4>
         </Col>
         <Col>
             <br>
@@ -403,7 +412,7 @@
         <Col>
             <br>
             {#await egresos_promise then egreso}
-                <Button on:click={crearPDF}>Crear documento PDF</Button>
+                <Button on:click={crearPDF}>Generar PDF</Button>
             {/await}
         </Col>
     </Row>
@@ -463,7 +472,7 @@
                     {#each es as e}
                         <tr>
                             <td>{addDays(new Date(e.fechaEgreso),1).toLocaleDateString()}</td>
-                            <td>{num2Curr(e.monto)}</td>
+                            <td class="text-end">{num2Curr(e.monto)}</td>
                             <td>
                                 {#await getProveedorNombre(e.codProveedor) then n}
                                     {n}

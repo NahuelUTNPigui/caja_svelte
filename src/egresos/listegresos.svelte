@@ -107,9 +107,16 @@
         let data=await res.json()
         return data.nombre
     }
-    function num2Curr(number){
-        const numberFormat = new Intl.NumberFormat('es-ES');
-        return numberFormat.format(number)
+    function only2Dig(numb){
+        return Math.round(100*numb)/100
+    }
+    function num2Curr(numb){
+            
+        const numberFormat = new Intl.NumberFormat('es-ar',{
+            style:"currency",
+            currency:"ARS"
+        });
+        return numberFormat.format(only2Dig(numb))
     }
     function addDays(date,days){
         var result = new Date(date);
@@ -216,7 +223,7 @@
                     {#each es as e}
                         <tr>
                             <td>{addDays(new Date(e.fechaEgreso),1).toLocaleDateString()}</td>
-                            <td>{num2Curr(e.monto)}</td>
+                            <td class="text-end">{num2Curr(e.monto)}</td>
                             <td>
                                 {#await getProveedorNombre(e.codProveedor) then n}
                                     {n}

@@ -1,6 +1,6 @@
 <script>
     import {Container,Row,Col,Table} from 'sveltestrap'
-    const version="1.0.4"
+    const version="1.0.5"
     const RUTA="http://localhost:8090/api/collections"
     let nuevoSaldo=false
     let numNuevoSaldo=0
@@ -70,10 +70,16 @@
         numNuevoSaldo=saldo
         
     }
-    function num2Curr(number){
-        
-        const numberFormat = new Intl.NumberFormat('es-ES');
-        return numberFormat.format(number)
+    function only2Dig(numb){
+        return Math.round(100*numb)/100
+    }
+    function num2Curr(numb){
+            
+        const numberFormat = new Intl.NumberFormat('es-ar',{
+            style:"currency",
+            currency:"ARS"
+        });
+        return numberFormat.format(only2Dig(numb))
     }
 </script>
 
@@ -83,7 +89,7 @@
         <Row>
             <Col>
                 {#await recalcularSaldo() then _}
-                    <h3 >Saldo: $<span class="{numNuevoSaldo>0?'positivo':'negativo'}">{num2Curr(numNuevoSaldo)}</span></h3>
+                    <h3 >Saldo: <span class="{numNuevoSaldo>0?'positivo':'negativo'}">{num2Curr(numNuevoSaldo)}</span></h3>
                 {/await}
                 <hr>
             </Col>
@@ -110,7 +116,7 @@
                             {#each igs as ig}
                                 <tr>
                                     <td>{addDays(new Date(ig.fechaIngreso),1).toLocaleDateString()}</td>
-                                    <td>{ig.monto}</td>
+                                    <td class="text-end">{num2Curr(ig.monto)}</td>
                                     <td>
                                         {#await getClienteNombre(ig.codCliente) then n}
                                             {n}
@@ -139,7 +145,7 @@
                             {#each egs as eg}
                                 <tr>
                                     <td>{addDays(new Date(eg.fechaEgreso),1).toLocaleDateString()}</td>
-                                    <td>{eg.monto}</td>
+                                    <td class="text-end">{num2Curr(eg.monto)}</td>
                                     <td>
                                         {#await getProveedorNombre(eg.codProveedor) then n}
                                             {n}
